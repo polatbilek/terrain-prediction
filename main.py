@@ -1,83 +1,108 @@
-from readwrite import get_data
+from readwrite import *
 import pandas as pd
 import matplotlib.pyplot as plt
+from drawer import *
+import os
+import sys
+import numpy as np
 
-path_to_file_1 = "C:\\Users\\polat\\Desktop\\117E747\\2018.11.8-BC_GO\\0_27_4_ls.192.168.4.41.dat"
-path_to_file_2 = "C:\\Users\\polat\\Desktop\\117E747\\2018.11.8-BC_GO\\1_5_0_ls.192.168.4.41.dat"
-path_to_file_3 = "C:\\Users\\polat\\Desktop\\117E747\\2018.11.8-BC_GO\\0_43_44_uh.192.168.4.41.dat"
-path_to_file_4 = "C:\\Users\\polat\\Desktop\\117E747\\2018.11.8-BC_GO\\0_53_15_dh.192.168.4.41.dat"
+#
+#  data object is a dict of terrain types
+#  for each terrain type there is a list of walkers with 4 sensor data (lu, ru, ld, rd)
+#  so each row is a person's list of sensor data (4 for perfect walk, if sensor missing it is empty list)
+#  for example data["ls"][0] will be (4,N,3) shape. 4 sensor each has N data recorded on 3 axes.
+#
 
-data = get_data(path_to_file_1, selection_type="one")
-pd_data = pd.DataFrame(data)
-pd_data_ls1 = pd_data
+path = "/home/darg2/Desktop/117E747"
+ip = "192.168.4."
 
-plt.title("column 0 file 1")
-plt.plot(pd_data[0])
-plt.show()
+ls = []  # level-surface
+ds = []  # downstairs
+dh = []  # downhill
+us = []  # upstairs
+uh = []  # uphill
 
-plt.title("column 1 file 1")
-plt.plot(pd_data[1])
-plt.show()
+data = {"ls": ls, "ds": ds, "dh": dh, "us": us, "uh": uh}
 
-plt.title("column 2 file 1")
-plt.plot(pd_data[2])
-plt.show()
+file_ls = []  # level-surface
+file_ds = []  # downstairs
+file_dh = []  # downhill
+file_us = []  # upstairs
+file_uh = []  # uphill
 
-data = get_data(path_to_file_2, selection_type="one")
-pd_data = pd.DataFrame(data)
-pd_data_ls2 = pd_data
+filenames_of_data = {"ls": file_ls, "ds": file_ds, "dh": file_dh, "us": file_us, "uh": file_uh}
 
-plt.title("column 0 file 2")
-plt.plot(pd_data[0])
-plt.show()
+for walker in os.listdir(path):
+	walker_data_filename = os.path.join(path, walker)
 
-plt.title("column 1 file 2")
-plt.plot(pd_data[1])
-plt.show()
+	sensor_walker1, sensor_walker2 = sensortxt_parser(os.path.join(walker_data_filename, "sensors.txt"))
 
-plt.title("column 2 file 2")
-plt.plot(pd_data[2])
-plt.show()
+	for person in [sensor_walker1, sensor_walker2]:
+		for terrain in list(data.keys()):
+			prefixes = [] #each prefix is a data run
 
-data = get_data(path_to_file_3, selection_type="one")
-pd_data = pd.DataFrame(data)
+			for data_file in os.listdir(walker_data_filename):
+				if terrain in data_file:
+					if len(prefixes) > 0: #if there is a data run is added already to data run list
+						flag = True
 
-plt.title("column 0 file 3")
-plt.plot(pd_data[0])
-plt.show()
+						for data_run in prefixes: #loop through data run names
+							if str(data_file.strip().split(terrain)[0]) == data_run: # if you find match, don't add
+								flag = False
 
-plt.title("column 1 file 3")
-plt.plot(pd_data[1])
-plt.show()
+						if flag: #if you didn't find any match in list, then this is a new run
+							prefixes.append(str(data_file.strip().split(terrain)[0]))
 
-plt.title("column 2 file 3")
-plt.plot(pd_data[2])
-plt.show()
+					else:
+						prefixes.append(str(data_file.strip().split(terrain)[0]))
 
-data = get_data(path_to_file_4, selection_type="one")
-pd_data = pd.DataFrame(data)
+			for prefix in prefixes:
+				one_person_run_data = []
+				filenames = []
 
-plt.title("column 0 file 4")
-plt.plot(pd_data[0])
-plt.show()
+				for sensor in list(person.keys()):
+					if(person[sensor] != 'x'):
+						data_filename = prefix + terrain + "." + ip + str(40 + person[sensor]) + ".dat"
 
-plt.title("column 1 file 4")
-plt.plot(pd_data[1])
-plt.show()
+						absolute_path = os.path.join(walker_data_filename, data_filename)
 
-plt.title("column 2 file 4")
-plt.plot(pd_data[2])
-plt.show()
+						one_person_one_sensor_data = get_data(absolute_path)
+
+						if one_person_one_sensor_data != 0:
+							one_person_run_data.append(one_person_one_sensor_data)
+							filenames.append(data_filename)
+						else:
+							one_person_run_data.append([])
+							filenames.append("")
+
+					else:
+						one_person_run_data.append([])
+						filenames.append("")
+
+				temp = data[terrain]
+				temp.append(one_person_run_data)
+				data[terrain] = temp
+
+				temp = filenames_of_data[terrain]
+				temp.append(filenames)
+				filenames_of_data[terrain] = temp
 
 
-plt.title("Boxplot column 0")
-plt.boxplot([pd_data_ls1[0], pd_data_ls2[0]], labels=['1', '2'])
-plt.show()
+for i in range(8):
+	#for j in range(4):
+	if len(data["ls"][i][0]) != 0 and len(data["ls"][i][1]) != 0:
+		#s = np.std(data["ls"][i][j])
+		#m = np.mean(data["ls"][i][j])
+		#print("User: " + str(i) + ", Sensor: " + str(j) + "\nmean: " + str(m) + ", std: " + str(s))
+		pd_data = pd.DataFrame(data["ls"][i][0])
 
-plt.title("Boxplot column 1")
-plt.boxplot([pd_data_ls1[1], pd_data_ls2[1]], labels=['1', '2'])
-plt.show()
+		plt.title(filenames_of_data["ls"][i][0] + " Walker: " + str(i) + ", Sensor: " + str(0))
+		plt.plot(pd_data[1])
+		plt.show()
 
-plt.title("Boxplot column 2")
-plt.boxplot([pd_data_ls1[2], pd_data_ls2[2]], labels=['1', '2'])
-plt.show()
+		pd_data = pd.DataFrame(data["ls"][i][1])
+
+		plt.title(filenames_of_data["ls"][i][0] + " Walker: " + str(i) + ", Sensor: " + str(1))
+		plt.plot(pd_data[1])
+		plt.show()
+
