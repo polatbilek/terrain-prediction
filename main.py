@@ -5,7 +5,7 @@ from drawer import *
 import os
 import sys
 import numpy as np
-
+import features
 #
 #  data object is a dict of terrain types
 #  for each terrain type there is a list of walkers with 4 sensor data (lu, ru, ld, rd)
@@ -88,6 +88,10 @@ for walker in os.listdir(path):
 				filenames_of_data[terrain] = temp
 
 
+print(np.shape(features.run(features.AI, data['ls'][0][0], 100, 20000)))
+
+
+'''
 for i in range(8):
 	#for j in range(4):
 	if len(data["ls"][i][0]) != 0 and len(data["ls"][i][1]) != 0:
@@ -105,4 +109,4 @@ for i in range(8):
 		plt.title(filenames_of_data["ls"][i][0] + " Walker: " + str(i) + ", Sensor: " + str(1))
 		plt.plot(pd_data[1])
 		plt.show()
-
+'''
