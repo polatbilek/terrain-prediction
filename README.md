@@ -1,1 +1,1 @@
-# terrain-prediction
+# Terrain Prediction Project
