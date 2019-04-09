@@ -6,6 +6,10 @@ import os
 import sys
 import numpy as np
 import features
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
+from sklearn.decomposition import PCA
+
 #
 #  data object is a dict of terrain types
 #  for each terrain type there is a list of walkers with 4 sensor data (lu, ru, ld, rd)
@@ -88,7 +92,62 @@ for walker in os.listdir(path):
 				filenames_of_data[terrain] = temp
 
 
-print(np.shape(features.run(features.AI, data['ls'][0][0], 100, 20000)))
+
+train = []
+test = []
+train_label = [] #ds 1    us 0  total 17
+test_label = []
+
+for i in range(10):
+
+	if len(data['ds'][i][1]) != 0:
+		if len(data['ds'][i][3]) != 0:
+			train.append([features.run("all", data['ds'][i][1], 50, 300), features.run("all", data['ds'][i][3], 50, 300)])
+			train_label.append(1)
+
+	if len(data['us'][i][1]) != 0:
+		if len(data['us'][i][3]) != 0:
+			train.append([features.run("all", data['us'][i][1], 50, 300), features.run("all", data['us'][i][3], 50, 300)])
+			train_label.append(0)
+
+
+for j in range(7):
+	i = 10+j
+
+	if len(data['ds'][i][1]) != 0:
+		if len(data['ds'][i][3]) != 0:
+			test.append([features.run("all", data['ds'][i][1], 50, 300), features.run("all", data['ds'][i][3], 50, 300)])
+			test_label.append(1)
+
+	if len(data['us'][i][1]) != 0:
+		if len(data['us'][i][3]) != 0:
+			test.append([features.run("all", data['us'][i][1], 50, 300), features.run("all", data['us'][i][3], 50, 300)])
+			test_label.append(0)
+
+
+
+
+
+'''
+pca = PCA(n_components=100)
+pca.fit(train)
+train = pca.transform(train)
+test = pca.transform(test)
+'''
+
+
+train = np.reshape(np.asarray(train), (len(train), 21*6*2))
+test = np.reshape(np.asarray(test), (len(test), 21*6*2))
+
+print("SVM training started...")
+svm = SVC(kernel='linear')
+svm.fit(np.asarray(train), np.asarray(train_label))
+
+print("SVM prediction started...")
+predictions = svm.predict(np.asarray(test))
+accuracy = accuracy_score(test_label, predictions)
+print(accuracy)
+#feature_vector = features.run("all", data['ls'][0][0], 50, 10000)
 
 
 '''

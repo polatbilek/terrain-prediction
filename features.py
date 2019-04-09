@@ -18,8 +18,8 @@ def slicer(data, T, first_N):
 
 		new_data.append(partition)
 
-		offset += T #not sliciding but rolling
-		#offset += T//2 #sliding with half
+		#offset += T #not sliciding but rolling
+		offset += T//2 #sliding with half
 
 
 	return new_data
@@ -32,9 +32,10 @@ def integrate(data):
 		slice = []
 
 		for j in range(len(data[i])):
-			slice.append(list(map(np.sum, data[i][0:j])))
+			slice.append(np.sum(data[i][0:j]))
 
 		integrated.append(slice)
+
 
 	return integrated
 
@@ -58,14 +59,15 @@ def averaged_velocity(data, T, first_N):
 	sliced_data = slicer(data, T, first_N)
 	velocity = integrate(sliced_data)
 
-	return list(map(np.average, velocity))
+	return [sum(vel)/float(len(vel)) for vel in velocity]
 
 
 def averaged_distance(data, T, first_N):
-	velocity = averaged_velocity(data, T, first_N)
+	sliced_data = slicer(data, T, first_N)
+	velocity = integrate(sliced_data)
 	distance = integrate(velocity)
 
-	return list(map(np.average, distance))
+	return [sum(dist)/float(len(dist)) for dist in distance]
 
 
 def zero_crossing_rate(data, T, first_N):
@@ -124,14 +126,50 @@ def VI(data, T, first_N): #var of movement intensity
 def run(func, data, T, first_N):
 	result = []
 
-	if func != pairwise_correlation and func != AI and func != VI:
-		result.append(func(list(np.asarray(data)[:,0]), T, first_N))
-		result.append(func(list(np.asarray(data)[:,1]), T, first_N))
-		result.append(func(list(np.asarray(data)[:,2]), T, first_N))
+	if func == "all":
+		result.append(mean(list(np.asarray(data)[:,0]), T, first_N))
+		result.append(mean(list(np.asarray(data)[:,1]), T, first_N))
+		result.append(mean(list(np.asarray(data)[:,2]), T, first_N))
+
+		result.append(variance(list(np.asarray(data)[:, 0]), T, first_N))
+		result.append(variance(list(np.asarray(data)[:, 1]), T, first_N))
+		result.append(variance(list(np.asarray(data)[:, 2]), T, first_N))
+
+		result.append(median(list(np.asarray(data)[:, 0]), T, first_N))
+		result.append(median(list(np.asarray(data)[:, 1]), T, first_N))
+		result.append(median(list(np.asarray(data)[:, 2]), T, first_N))
+
+		result.append(averaged_velocity(list(np.asarray(data)[:, 0]), T, first_N))
+		result.append(averaged_velocity(list(np.asarray(data)[:, 1]), T, first_N))
+		result.append(averaged_velocity(list(np.asarray(data)[:, 2]), T, first_N))
+
+		result.append(averaged_distance(list(np.asarray(data)[:, 0]), T, first_N))
+		result.append(averaged_distance(list(np.asarray(data)[:, 1]), T, first_N))
+		result.append(averaged_distance(list(np.asarray(data)[:, 2]), T, first_N))
+
+		result.append(zero_crossing_rate(list(np.asarray(data)[:, 0]), T, first_N))
+		result.append(zero_crossing_rate(list(np.asarray(data)[:, 1]), T, first_N))
+		result.append(zero_crossing_rate(list(np.asarray(data)[:, 2]), T, first_N))
+
+		pc = pairwise_correlation(data, T, first_N)
+		for i in range(len(mean(list(np.asarray(data)[:,0]), T, first_N))-len(pc)):
+			pc.append(0)
+
+		result.append(pc)
+		result.append(AI(data, T, first_N))
+		result.append(VI(data, T, first_N))
+
 		return result
 
 	else:
-		return func(data, T, first_N)
+		if func != pairwise_correlation and func != AI and func != VI:
+			result.append(func(list(np.asarray(data)[:,0]), T, first_N))
+			result.append(func(list(np.asarray(data)[:,1]), T, first_N))
+			result.append(func(list(np.asarray(data)[:,2]), T, first_N))
+			return result
+
+		else:
+			return func(data, T, first_N)
 
 
 
