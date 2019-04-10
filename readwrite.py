@@ -1,11 +1,3 @@
-import os
-
-
-######################################
-#
-# This method reads and returns the sensor data
-# selection_type indicates how much or which type of data you want
-# "one" = returns only indicated specific data
 
 def get_data(path):
 	try:
